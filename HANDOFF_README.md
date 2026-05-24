@@ -15,7 +15,7 @@
 
 | 파일 | 줄수 | 역할 | 누가 읽어야 하나 |
 |---|---|---|---|
-| **`A4_PAGE_FLOW_FACTORY_V1_3_REDESIGN.md`** | 1360 | **최종 단일 잠금본** (spec + PRD + plan) | **다음 Captain AI 필수** |
+| **`A4_PAGE_FLOW_FACTORY_V1_3_REDESIGN.md`** | ~1380 | **최종 단일 잠금본** (spec + PRD + plan, **v1.3.1 evidence patch 흡수됨**) | **다음 Captain AI 필수** |
 | **`A4_PAGE_FLOW_FACTORY_V1_3_1_PATCH_EVIDENCE.md`** | ~450 | **v1.3.1 패치** — evidence 파이프라인 (Day 6~7 추가) | Day 6 진입 시 |
 | `V1_CURRENT_STATE_REVIEW.md` | 372 | V1 진단 리포트 (왜 새로 만드는지) | 참고용 |
 | `V2_FULL_REDESIGN_DRAFT.md` | 967 | V2 재설계 중간 draft | 참고용 (v1.3에 흡수됨) |

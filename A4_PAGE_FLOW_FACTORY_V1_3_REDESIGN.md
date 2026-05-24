@@ -86,10 +86,10 @@
 | Layer | 이름 | 역할 | 단위 | MVP |
 |---|---|---|---|---|
 | **P1** | P1_EXTRACT | 이미지/PDF/문서에서 텍스트 추출용 프롬프트 생성 | 추출 배치 1개 | ✅ |
-| **P2** | P2_CLASSIFY | 추출 텍스트를 블록으로 분류 | 추출 배치 1개 | ✅ |
+| **P2** | P2_CLASSIFY | 추출 텍스트를 블록으로 분류 + **proof_need 분류** (text/visual/hybrid/none, v1.3.1) | 추출 배치 1개 | ✅ |
 | **P3** | P3_STYLE | UI/UX 스타일 프롬프트 생성 | 프로젝트 1개 | ✅ |
 | **P4** | P4_IMAGE_ELEM | 이미지 요소별 프롬프트 생성 | 이미지 슬롯 1개 (N개) | ✅ |
-| **P5** | P5_CHANNEL | 채널 변환 프롬프트 생성 | 채널 1개 (N개) | ✅ |
+| **P5** | P5_CHANNEL | 채널 변환 프롬프트 생성 + **proof 타입별 문구 분기** (text/visual/hybrid, v1.3.1) | 채널 1개 (N개) | ✅ |
 
 **MVP 핵심 잠금**: 각 Layer는 **API 호출이 아니라 `.md` 프롬프트 파일을 출력**.
 
@@ -394,9 +394,10 @@ a4-page-flow-factory-v2/
 | 필드 | 타입 | 설명 |
 |---|---|---|
 | `slot_id` | string | 슬롯 고유 ID |
-| `elem_type` | enum | icon / illustration / hero_image / chart_visual / pattern / divider |
+| `elem_type` | enum | icon / illustration / hero_image / chart_visual / pattern / divider / **proof_visual** (v1.3.1) |
 | `position` | object | `{x, y, w, h}`. 0~1 비율 |
 | `linked_design_block` | string | design_blocks의 id. 선택 |
+| `linked_proof_asset` | string\|null | proof_assets의 id (v1.3.1). 상세 스키마는 v1.3.1 패치 참조. 선택 |
 | `prompt_file` | string | P4 프롬프트 .md 경로 |
 | `generated_image` | string\|null | 사용자가 업로드한 이미지 경로 |
 | `status` | enum | prompt_only / pending / ready / approved |
@@ -717,6 +718,8 @@ src/factory/
 | `src/factory/prompts/` 모듈 골격 | 포함 |
 | PNG 품질 체크리스트 자동화 (12 항목) | 포함 |
 | cache.py / slicer.py / main.py 선별 이식 | 포함 |
+| **evidence 프롬프트** (외부 LLM 크롤링/조사용, v1.3.1) | 포함 (Day 6+, M1 범위 외) |
+| **P2 proof_need 분류 + P5 proof 타입 분기** (v1.3.1) | 포함 (Day 6+, M1 범위 외) |
 
 ---
 
@@ -738,6 +741,7 @@ src/factory/
 | 캘린더 자동 배치 | Post-MVP |
 | `src/factory/ai/` 실제 구현 | Phase 2 |
 | Framer식 풀 편집 UI | **제외** |
+| **Factory 내부 자동 크롤링 엔진** (v1.3.1) | Post-MVP (외부 LLM 반자동 프롬프트만 MVP) |
 
 ---
 
@@ -935,6 +939,8 @@ factory init
 11. **Day 5 PNG 1장 게이트를 삭제하지 않는다.**
 12. P1~P5를 흐릿하게 만들지 않는다.
 13. **"Pack"이라는 단어를 사용자 UI에 노출하지 않는다.**
+14. **가짜 숫자/후기/인증/논문/출처를 생성하지 않는다** (v1.3.1 — evidence는 외부 사람 수집 + `source_status` 추적 강제. 상세는 v1.3.1 패치).
+15. **Factory 내부 자동 크롤링 엔진을 MVP에 넣지 않는다** (v1.3.1 — 외부 LLM 반자동 프롬프트 흐름만 유지. v1.3 §3-2 계승).
 
 ---
 
@@ -948,7 +954,7 @@ factory init
 | **P2** | `extract/[batch]/extracted.md` (사람 검수 후) + enum 정의 + `prompts/classify_default.md` | `projects/[slug]/prompts/P2_classify.md` | `extract/[batch]/classified.jsonl` → `factory blocks add` (interactive) |
 | **P3** | `brand/*.md` + `voice/[tone].md` + `prompts/style_*.md` | `projects/[slug]/prompts/P3_style.md` | (P5 안에 흡수) |
 | **P4** | 각 image_slot 메타 + `prompts/image_elem_default.md` + (선택) `design_blocks.jsonl` 매칭 | `projects/[slug]/prompts/P4_image_elem/page_NN_<elem>_NN.md` (slot 수만큼) | (선택) 사용자가 만든 이미지를 슬롯에 drag&drop → `output/[slug]/assets/img_NNN.png` |
-| **P5** | 매칭된 `blocks.jsonl` 행 + P3 결과 + `channels/[ch].md` + `prompts/channel_adapters/[ch].md` + `logic/[role].md` + `examples/*.md` | `projects/[slug]/prompts/P5_channel/[ch].md` | `output/[slug]/copy_master.json` → `factory copy import` |
+| **P5** | 매칭된 `blocks.jsonl` 행 + P3 결과 + `channels/[ch].md` + `prompts/channel_adapters/[ch].md` + `logic/[role].md` + `examples/*.md` + **매칭된 proof_assets (proof_type 기준, v1.3.1 — 상세 스키마는 v1.3.1 패치 참조)** | `projects/[slug]/prompts/P5_channel/[ch].md` | `output/[slug]/copy_master.json` → `factory copy import` |
 
 ---
 
@@ -1061,6 +1067,9 @@ factory init
 | `prompt_type` (v1.3 §5) | `P1_EXTRACT` / `P2_CLASSIFY` / `P3_STYLE` / `P4_IMAGE_ELEM` / `P5_CHANNEL` |
 | `model_hint` (v1.3 §6) | `gpt` / `claude` / `gemini` / `any` |
 | `output_profile` | `a4_document` / `instagram_square` / `instagram_portrait` / `story_9_16` / `threads_image` / `linkedin_post` / `pinterest_pin` / `x_card` / `facebook_post` / `medium_header` (10개) |
+| `proof_type` (v1.3.1) | `text_proof` / `visual_proof` / `hybrid_proof` (3개) |
+| `proof_need` (v1.3.1, P2 분류) | `text` / `visual` / `hybrid` / `none` (4개) |
+| `source_status` (v1.3.1, evidence 추적) | `not_collected` / `pending` / `collected` / `verified` / `rejected` (5개) |
 
 **규칙**:
 - 영문 snake_case만 (한글 enum 금지)
@@ -1274,6 +1283,7 @@ src/factory/ai/
 | **PNG 품질 체크 12 항목 (V2 draft 11 → 12 교정)** | — | — | **v1.3 신규** |
 | **projects/[slug]/prompts/ 폴더 구조** | — | — | **v1.3 신규** |
 | **자료실에 prompts/ 템플릿 폴더** | — | — | **v1.3 신규** |
+| **v1.3.1 evidence 흡수** (proof_type/proof_need/source_status + P2/P5 분기 + image_slots에 proof_visual/linked_proof_asset, 상세는 v1.3.1 패치) | — | — | **v1.3.1 신규** |
 
 ---
 
